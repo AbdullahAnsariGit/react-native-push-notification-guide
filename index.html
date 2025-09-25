@@ -1,157 +1,320 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Firebase Push Notifications Guide for React Native (Android)</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --accent-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --text-primary: #1a202c;
+            --text-secondary: #4a5568;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f7fafc;
+            --border-color: #e2e8f0;
+            --code-bg: #f8fafc;
+            --code-text: #2d3748;
+            --success-gradient: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+        }
+
+        [data-theme="dark"] {
+            --primary-gradient: linear-gradient(135deg, #a3bffa 0%, #b794f4 100%);
+            --secondary-gradient: linear-gradient(135deg, #fed7d7 0%, #fc8181 100%);
+            --accent-gradient: linear-gradient(135deg, #bee3f8 0%, #90cdf4 100%);
+            --text-primary: #e2e8f0;
+            --text-secondary: #a0aec0;
+            --bg-primary: #1a202c;
+            --bg-secondary: #2d3748;
+            --border-color: #4a5568;
+            --code-bg: #2d3748;
+            --code-text: #e2e8f0;
+        }
+
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background-color: #0a0a0a;
-            color: #e0e0e0;
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.7;
             margin: 0;
             padding: 0;
-            line-height: 1.6;
+            overflow-x: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         .container {
-            max-width: 900px;
-            margin: 40px auto;
-            padding: 20px;
-            background-color: #1a1a1a;
-            border-radius: 12px;
-            box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+            max-width: 1000px;
+            margin: 3rem auto;
+            padding: 2.5rem;
+            background: var(--bg-primary);
+            border-radius: 1rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            border: 1px solid var(--border-color);
+        }
+
+        .container:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
 
         h1 {
-            color: #00f7ff;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
             text-align: center;
-            font-size: 2.5em;
-            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+            font-size: 2.75rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
         }
 
         h2 {
-            color: #00d4ff;
-            font-size: 1.8em;
-            margin-top: 30px;
-            border-bottom: 2px solid #00f7ff;
-            padding-bottom: 10px;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 1.75rem;
+            font-weight: 600;
+            margin-top: 2.5rem;
+            margin-bottom: 1rem;
+            position: relative;
         }
 
-        p,
-        li {
-            font-size: 1.1em;
-            color: #d0d0d0;
+        h2::after {
+            content: '';
+            position: absolute;
+            bottom: -0.5rem;
+            left: 0;
+            width: 50px;
+            height: 3px;
+            background: var(--accent-gradient);
+            border-radius: 2px;
+        }
+
+        p, li {
+            font-size: 1.125rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
         }
 
         ul {
-            list-style-type: none;
+            list-style: none;
             padding-left: 0;
         }
 
         li {
-            margin-bottom: 15px;
-            padding-left: 20px;
             position: relative;
+            padding-left: 1.75rem;
+            margin-bottom: 1rem;
         }
 
         li:before {
-            content: '🔹';
+            content: '✦';
             position: absolute;
             left: 0;
-            color: #00f7ff;
+            color: #667eea;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        [data-theme="dark"] li:before {
+            color: #a3bffa;
         }
 
         pre {
-            background-color: #2a2a2a;
-            padding: 15px;
-            border-radius: 8px;
+            background: var(--code-bg);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            position: relative;
             overflow-x: auto;
-            box-shadow: 0 0 10px rgba(0, 255, 255, 0.1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            margin: 1rem 0;
         }
 
         code {
             font-family: 'Fira Code', monospace;
-            color: #00f7ff;
+            color: var(--code-text);
+            font-size: 0.95rem;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+            background: var(--success-gradient);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            box-shadow: 0 2px 10px rgba(72, 187, 120, 0.3);
+        }
+
+        .copy-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(72, 187, 120, 0.4);
+        }
+
+        .copy-btn.copied {
+            background: var(--secondary-gradient);
+            box-shadow: 0 2px 10px rgba(245, 87, 108, 0.3);
         }
 
         .note {
-            background-color: #333;
-            padding: 15px;
-            border-left: 4px solid #00f7ff;
-            border-radius: 4px;
-            margin: 20px 0;
-            color: #d0d0d0;
+            background: var(--bg-secondary);
+            padding: 1.5rem;
+            border-left: 4px solid #667eea;
+            border-radius: 0.5rem;
+            margin: 1.5rem 0;
+            transition: all 0.3s ease;
+            border: 1px solid var(--border-color);
+        }
+
+        [data-theme="dark"] .note {
+            border-left-color: #a3bffa;
+        }
+
+        .note:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.1);
         }
 
         a {
-            color: #00f7ff;
+            color: #667eea;
             text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        [data-theme="dark"] a {
+            color: #a3bffa;
         }
 
         a:hover {
+            color: #5a67d8;
             text-decoration: underline;
         }
 
+        [data-theme="dark"] a:hover {
+            color: #90cdf4;
+        }
+
         .highlight {
-            color: #ff4081;
-            font-weight: bold;
+            background: var(--secondary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 600;
         }
 
         .credits {
             text-align: center;
-            margin-top: 40px;
-            padding: 20px;
-            background-color: #222;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+            margin-top: 3rem;
+            padding: 1.5rem;
+            background: var(--bg-secondary);
+            border-radius: 0.75rem;
+            border: 1px solid var(--border-color);
         }
 
         .credits p {
-            font-size: 1em;
-            color: #00f7ff;
+            font-size: 1rem;
+            color: #667eea;
+            font-weight: 500;
+        }
+
+        [data-theme="dark"] .credits p {
+            color: #a3bffa;
+        }
+
+        @keyframes fadeInUp {
+            from { 
+                opacity: 0; 
+                transform: translateY(30px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
+        }
+
+        .fade-in {
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+
+        @keyframes glow {
+            0% { box-shadow: 0 0 5px rgba(102, 126, 234, 0.3); }
+            50% { box-shadow: 0 0 20px rgba(102, 126, 234, 0.6); }
+            100% { box-shadow: 0 0 5px rgba(102, 126, 234, 0.3); }
+        }
+
+        .glow {
+            animation: glow 2s ease-in-out infinite;
         }
     </style>
 </head>
-
-<body>
-    <div class="container">
-        <h1>Firebase Push Notifications Guide for React Native (Android)</h1>
-        <p>This guide provides a step-by-step process to implement Firebase Push Notifications in a React Native mobile
-            app for Android, styled in a professional Neon Dark theme.</p>
+<body data-theme="dark">
+    <button class="theme-toggle" onclick="toggleTheme()">☀️ Light Mode</button>
+    
+    <div class="container fade-in">
+        <h1 class="glow">Firebase Push Notifications Guide for React Native (Android)</h1>
+        <p class="fade-in">This guide provides a comprehensive, step-by-step process to implement Firebase Push Notifications in a React Native mobile app for Android, styled in a professional gradient theme inspired by modern AI development tools.</p>
 
         <h2>Step 1: Set Up Firebase Project</h2>
         <ul>
-            <li>Create a Firebase project in the <a href="https://console.firebase.google.com/" target="_blank">Firebase
-                    Console</a>.</li>
-            <li>Add your Android app by providing the <span class="highlight">applicationId</span> (from your
-                <code>android/app/build.gradle</code>) and app name.</li>
-            <li>Download the <code>google-services.json</code> file from the Firebase Console.</li>
-            <li>Place the <code>google-services.json</code> file in the <code>android/app/</code> directory of your
-                React Native project.</li>
-            <li>Install the required Firebase packages with matching versions:</li>
+            <li class="fade-in">Create a Firebase project in the <a href="https://console.firebase.google.com/" target="_blank">Firebase Console</a>.</li>
+            <li class="fade-in">Add your Android app by providing the <span class="highlight">applicationId</span> (from your <code>android/app/build.gradle</code>) and app name.</li>
+            <li class="fade-in">Download the <code>google-services.json</code> file from the Firebase Console.</li>
+            <li class="fade-in">Place the <code>google-services.json</code> file in the <code>android/app/</code> directory of your React Native project.</li>
+            <li class="fade-in">Install the required Firebase packages with matching versions:</li>
         </ul>
-        <pre><code>npm install @react-native-firebase/app@^22.2.0 @react-native-firebase/messaging@^22.2.0</code></pre>
-        <div class="note">
-            <p><strong>Note:</strong> Ensure both <code>@react-native-firebase/app</code> and
-                <code>@react-native-firebase/messaging</code> have the same version (e.g., <code>^22.2.0</code>) to
-                avoid compatibility issues.</p>
+        <pre><code class="language-bash">npm install @react-native-firebase/app@^22.2.0 @react-native-firebase/messaging@^22.2.0
+<button class="copy-btn glow" onclick="copyCode(this)">Copy Code</button></code></pre>
+        <div class="note fade-in">
+            <p><strong>💡 Pro Tip:</strong> Ensure both <code>@react-native-firebase/app</code> and <code>@react-native-firebase/messaging</code> have the same version (e.g., <code>^22.2.0</code>) to avoid compatibility issues and ensure smooth integration.</p>
         </div>
 
         <h2>Step 2: Test Push Notifications</h2>
-        <p>Test your Firebase Cloud Messaging (FCM) setup using a tool like <a href="https://fcm-tester.netlify.app/"
-                target="_blank">FCM Tester</a>. You’ll need the FCM token, project ID, and server access token.</p>
+        <p class="fade-in">Test your Firebase Cloud Messaging (FCM) setup using a tool like <a href="https://fcm-tester.netlify.app/" target="_blank">FCM Tester</a>. You'll need the FCM token, project ID, and server access token to validate your configuration.</p>
 
         <h2>Step 2.1: Get FCM Token</h2>
-        <p>Create a utility function to retrieve the FCM token, handling Android 13+ notification permissions.</p>
-        <pre><code>// utils/fcmService.js
+        <p class="fade-in">Create a utility function to retrieve the FCM token, handling Android 13+ notification permissions with graceful error handling.</p>
+        <pre><code class="language-javascript">// utils/fcmService.js
 import messaging from '@react-native-firebase/messaging';
 import { Platform, PermissionsAndroid } from 'react-native';
 
 export async function getFcmToken() {
   try {
-    // 🔹 Android 13+ requires POST_NOTIFICATIONS runtime permission
+    // 🚀 Android 13+ requires POST_NOTIFICATIONS runtime permission
     if (Platform.OS === 'android' && Platform.Version >= 33) {
       const granted = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
@@ -162,7 +325,7 @@ export async function getFcmToken() {
       }
     }
 
-    // 🔹 Get FCM token
+    // 🚀 Get FCM token
     const token = await messaging().getToken();
     console.log('✅ FCM Token:', token);
     return token;
@@ -171,22 +334,19 @@ export async function getFcmToken() {
     return null;
   }
 }
-</code></pre>
-        <div class="note">
-            <p><strong>Note:</strong> Use the retrieved FCM token in the <a href="https://fcm-tester.netlify.app/"
-                    target="_blank">FCM Tester</a> tool to send test notifications.</p>
+<button class="copy-btn glow" onclick="copyCode(this)">Copy Code</button></code></pre>
+        <div class="note fade-in">
+            <p><strong>🔍 Quick Test:</strong> Use the retrieved FCM token in the <a href="https://fcm-tester.netlify.app/" target="_blank">FCM Tester</a> tool to send test notifications and verify delivery.</p>
         </div>
 
         <h2>Step 2.2: Configure Server Access Token</h2>
-        <p>To send notifications programmatically, obtain a server access token using a Node.js application and the
-            <code>services-account.json</code> file.</p>
+        <p class="fade-in">To send notifications programmatically, obtain a server access token using a Node.js application and the <code>services-account.json</code> file for secure authentication.</p>
         <ul>
-            <li>In the Firebase Console, navigate to <strong>Project Settings > Service Accounts</strong>.</li>
-            <li>Click <strong>Generate New Private Key</strong> to download the <code>services-account.json</code> file.
-            </li>
-            <li>Create a Node.js script to generate the access token:</li>
+            <li class="fade-in">In the Firebase Console, navigate to <strong>Project Settings > Service Accounts</strong>.</li>
+            <li class="fade-in">Click <strong>Generate New Private Key</strong> to download the <code>services-account.json</code> file.</li>
+            <li class="fade-in">Create a Node.js script to generate the access token:</li>
         </ul>
-        <pre><code>// getAccessToken.js
+        <pre><code class="language-javascript">// getAccessToken.js
 const { GoogleAuth } = require('google-auth-library');
 
 async function getAccessToken() {
@@ -202,33 +362,76 @@ async function getAccessToken() {
 }
 
 getAccessToken();
-</code></pre>
+<button class="copy-btn glow" onclick="copyCode(this)">Copy Code</button></code></pre>
         <ul>
-            <li>Install the required Node.js package:</li>
+            <li class="fade-in">Install the required Node.js package:</li>
         </ul>
-        <pre><code>npm install google-auth-library</code></pre>
+        <pre><code class="language-bash">npm install google-auth-library
+<button class="copy-btn glow" onclick="copyCode(this)">Copy Code</button></code></pre>
         <ul>
-            <li>Run the script to obtain the access token.</li>
-            <li>Use the access token and project ID (e.g., <code>project-name-78d63</code>) in the FCM Tester tool to
-                send test notifications.</li>
+            <li class="fade-in">Run the script to obtain the access token.</li>
+            <li class="fade-in">Use the access token and project ID (e.g., <code>project-name-78d63</code>) in the FCM Tester tool to send test notifications.</li>
         </ul>
 
         <h2>Next Steps</h2>
-        <p>Once the setup is complete and test notifications are working, you can integrate push notification handling
-            in your React Native app. Refer to the <a href="https://rnfirebase.io/messaging/usage"
-                target="_blank">@react-native-firebase/messaging documentation</a> for handling foreground and
-            background notifications.</p>
-        <div class="note">
-            <p><strong>Note:</strong> This guide focuses on Android. For iOS implementation, additional steps like
-                configuring APNs (Apple Push Notification service) and handling iOS-specific permissions will be
-                required.</p>
+        <p class="fade-in">Once the setup is complete and test notifications are working, you can integrate push notification handling in your React Native app. Refer to the <a href="https://rnfirebase.io/messaging/usage" target="_blank">@react-native-firebase/messaging documentation</a> for handling foreground and background notifications with advanced patterns.</p>
+        <div class="note fade-in">
+            <p><strong>📱 Platform Note:</strong> This guide focuses on Android. For iOS implementation, additional steps like configuring APNs (Apple Push Notification service) and handling iOS-specific permissions will be required to ensure cross-platform compatibility.</p>
         </div>
 
-        <div class="credits">
-            <p>Credits: This guide was created with contributions from <span class="highlight">Abdullah Ansari</span>.
-            </p>
+        <div class="credits fade-in">
+            <p>Credits: This guide was created with contributions from <a href="https://pk.linkedin.com/in/abdullah-ansari-7b78031ba" target="_blank"><span class="highlight">Abdullah Ansari</span></a>. Built with modern development practices in mind.</p>
         </div>
     </div>
-</body>
 
+    <script>
+        // Theme toggle functionality
+        function toggleTheme() {
+            const body = document.body;
+            const button = document.querySelector('.theme-toggle');
+            const currentTheme = body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            body.setAttribute('data-theme', newTheme);
+            button.textContent = newTheme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+            localStorage.setItem('theme', newTheme);
+        }
+
+        // Load saved theme or default to dark
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.body.setAttribute('data-theme', savedTheme);
+        document.querySelector('.theme-toggle').textContent = savedTheme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+
+        // Copy code functionality
+        function copyCode(button) {
+            const codeElement = button.previousElementSibling;
+            const code = codeElement.textContent.trim();
+            
+            navigator.clipboard.writeText(code).then(() => {
+                const originalText = button.textContent;
+                button.textContent = 'Copied! ✨';
+                button.classList.add('copied');
+                
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.classList.remove('copied');
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                button.textContent = 'Copy Failed';
+                setTimeout(() => {
+                    button.textContent = 'Copy Code';
+                }, 2000);
+            });
+        }
+
+        // Staggered animation on load
+        document.addEventListener('DOMContentLoaded', () => {
+            const elements = document.querySelectorAll('.fade-in');
+            elements.forEach((el, index) => {
+                el.style.animationDelay = `${index * 0.1}s`;
+            });
+        });
+    </script>
+</body>
 </html>
