@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Push Notifications Guide for React Native (Android)</title>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #0a0a0a;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #1a1a1a;
+            border-radius: 12px;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+        }
+
+        h1 {
+            color: #00f7ff;
+            text-align: center;
+            font-size: 2.5em;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+
+        h2 {
+            color: #00d4ff;
+            font-size: 1.8em;
+            margin-top: 30px;
+            border-bottom: 2px solid #00f7ff;
+            padding-bottom: 10px;
+        }
+
+        p,
+        li {
+            font-size: 1.1em;
+            color: #d0d0d0;
+        }
+
+        ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        li {
+            margin-bottom: 15px;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        li:before {
+            content: '🔹';
+            position: absolute;
+            left: 0;
+            color: #00f7ff;
+        }
+
+        pre {
+            background-color: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.1);
+        }
+
+        code {
+            font-family: 'Fira Code', monospace;
+            color: #00f7ff;
+        }
+
+        .note {
+            background-color: #333;
+            padding: 15px;
+            border-left: 4px solid #00f7ff;
+            border-radius: 4px;
+            margin: 20px 0;
+            color: #d0d0d0;
+        }
+
+        a {
+            color: #00f7ff;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .highlight {
+            color: #ff4081;
+            font-weight: bold;
+        }
+
+        .credits {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            background-color: #222;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+        }
+
+        .credits p {
+            font-size: 1em;
+            color: #00f7ff;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Firebase Push Notifications Guide for React Native (Android)</h1>
+        <p>This guide provides a step-by-step process to implement Firebase Push Notifications in a React Native mobile
+            app for Android, styled in a professional Neon Dark theme.</p>
+
+        <h2>Step 1: Set Up Firebase Project</h2>
+        <ul>
+            <li>Create a Firebase project in the <a href="https://console.firebase.google.com/" target="_blank">Firebase
+                    Console</a>.</li>
+            <li>Add your Android app by providing the <span class="highlight">applicationId</span> (from your
+                <code>android/app/build.gradle</code>) and app name.</li>
+            <li>Download the <code>google-services.json</code> file from the Firebase Console.</li>
+            <li>Place the <code>google-services.json</code> file in the <code>android/app/</code> directory of your
+                React Native project.</li>
+            <li>Install the required Firebase packages with matching versions:</li>
+        </ul>
+        <pre><code>npm install @react-native-firebase/app@^22.2.0 @react-native-firebase/messaging@^22.2.0</code></pre>
+        <div class="note">
+            <p><strong>Note:</strong> Ensure both <code>@react-native-firebase/app</code> and
+                <code>@react-native-firebase/messaging</code> have the same version (e.g., <code>^22.2.0</code>) to
+                avoid compatibility issues.</p>
+        </div>
+
+        <h2>Step 2: Test Push Notifications</h2>
+        <p>Test your Firebase Cloud Messaging (FCM) setup using a tool like <a href="https://fcm-tester.netlify.app/"
+                target="_blank">FCM Tester</a>. You’ll need the FCM token, project ID, and server access token.</p>
+
+        <h2>Step 2.1: Get FCM Token</h2>
+        <p>Create a utility function to retrieve the FCM token, handling Android 13+ notification permissions.</p>
+        <pre><code>// utils/fcmService.js
+import messaging from '@react-native-firebase/messaging';
+import { Platform, PermissionsAndroid } from 'react-native';
+
+export async function getFcmToken() {
+  try {
+    // 🔹 Android 13+ requires POST_NOTIFICATIONS runtime permission
+    if (Platform.OS === 'android' && Platform.Version >= 33) {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
+      );
+      if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+        console.log('❌ Notification permission denied');
+        return null;
+      }
+    }
+
+    // 🔹 Get FCM token
+    const token = await messaging().getToken();
+    console.log('✅ FCM Token:', token);
+    return token;
+  } catch (error) {
+    console.error('🔥 Error getting FCM token:', error);
+    return null;
+  }
+}
+</code></pre>
+        <div class="note">
+            <p><strong>Note:</strong> Use the retrieved FCM token in the <a href="https://fcm-tester.netlify.app/"
+                    target="_blank">FCM Tester</a> tool to send test notifications.</p>
+        </div>
+
+        <h2>Step 2.2: Configure Server Access Token</h2>
+        <p>To send notifications programmatically, obtain a server access token using a Node.js application and the
+            <code>services-account.json</code> file.</p>
+        <ul>
+            <li>In the Firebase Console, navigate to <strong>Project Settings > Service Accounts</strong>.</li>
+            <li>Click <strong>Generate New Private Key</strong> to download the <code>services-account.json</code> file.
+            </li>
+            <li>Create a Node.js script to generate the access token:</li>
+        </ul>
+        <pre><code>// getAccessToken.js
+const { GoogleAuth } = require('google-auth-library');
+
+async function getAccessToken() {
+  const auth = new GoogleAuth({
+    keyFile: 'services-account.json', // Path to your downloaded JSON
+    scopes: ['https://www.googleapis.com/auth/firebase.messaging'],
+  });
+
+  const client = await auth.getClient();
+  const token = await client.getAccessToken();
+  console.log('✅ Access Token:', token.token);
+  return token.token;
+}
+
+getAccessToken();
+</code></pre>
+        <ul>
+            <li>Install the required Node.js package:</li>
+        </ul>
+        <pre><code>npm install google-auth-library</code></pre>
+        <ul>
+            <li>Run the script to obtain the access token.</li>
+            <li>Use the access token and project ID (e.g., <code>project-name-78d63</code>) in the FCM Tester tool to
+                send test notifications.</li>
+        </ul>
+
+        <h2>Next Steps</h2>
+        <p>Once the setup is complete and test notifications are working, you can integrate push notification handling
+            in your React Native app. Refer to the <a href="https://rnfirebase.io/messaging/usage"
+                target="_blank">@react-native-firebase/messaging documentation</a> for handling foreground and
+            background notifications.</p>
+        <div class="note">
+            <p><strong>Note:</strong> This guide focuses on Android. For iOS implementation, additional steps like
+                configuring APNs (Apple Push Notification service) and handling iOS-specific permissions will be
+                required.</p>
+        </div>
+
+        <div class="credits">
+            <p>Credits: This guide was created with contributions from <span class="highlight">Abdullah Ansari</span>.
+            </p>
+        </div>
+    </div>
+</body>
+
+</html>
